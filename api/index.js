@@ -41,8 +41,14 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// 4. Definindo a rota da Documentação Interativa
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// 4. Definindo a rota da Documentação Interativa com CDN (para funcionar na Vercel)
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
+  customJs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js'
+  ]
+}));
 
 // 5. Registrando as rotas da aplicação
 app.use('/api/auth', authRoutes);
