@@ -1,0 +1,92 @@
+// 1. Configuração do Prisma Client e Banco de Dados (NeonDB)
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. Conexão usando a URL fornecida pelo NeonDB
+datasource db {
+  provider = "postgresql"
+}
+
+// 3. Tabela de Usuários
+model User {
+  id        String       @id @default(uuid())
+  name      String
+  email     String       @unique
+  password  String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  
+  // Relacionamentos SQL Reais
+  teams     TeamMember[]
+  tasks     Task[]       @relation("AssignedTasks")
+  comments  Comment[]
+  ownedTeams Team[]      @relation("TeamOwner")
+}
+
+// 4. Tabela de Times
+model Team {
+  id        String       @id @default(uuid())
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  
+  // O usuário que criou o time
+  ownerId   String
+  owner     User         @relation("TeamOwner", fields: [ownerId], references: [id])
+  
+  // Relacionamentos SQL Reais
+  members   TeamMember[]
+  tasks     Task[]
+}
+
+// 5. Tabela Intermediária (Muitos para Muitos entre User e Team)
+model TeamMember {
+  userId    String
+  teamId    String
+  role      String       @default("MEMBER") // Pode ser ADMIN ou MEMBER
+  joinedAt  DateTime     @default(now())
+
+  // Relações com as tabelas principais
+  user      User         @relation(fields: [userId], references: [id])
+  team      Team         @relation(fields: [teamId], references: [id])
+
+  // Chave primária composta (um usuário só pode entrar num time uma vez)
+  @@id([userId, teamId]) 
+}
+
+// 6. Tabela de Tarefas
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("TODO") // TODO, DOING, DONE
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // A tarefa sempre pertence a um time
+  teamId      String
+  team        Team      @relation(fields: [teamId], references: [id])
+  
+  // Pode ou não ter um responsável
+  assigneeId  String?
+  assignee    User?     @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  
+  // Relacionamento com comentários
+  comments    Comment[]
+}
+
+// 7. Tabela de Comentários
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  // Pertence a uma tarefa e foi escrito por um usuário
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+}
